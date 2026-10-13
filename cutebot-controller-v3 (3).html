@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Cutebot Ovládání</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+  :root {
+    --bg: #0a0e1a; --panel: #111827; --border: #1e3a5f;
+    --accent: #00d4ff; --accent2: #ff6b35; --green: #00ff88;
+    --red: #ff3366; --text: #c8dff0; --dim: #4a6080;
+    --btn-bg: #0d1f35; --btn-active: #003d5c;
+    --glow: 0 0 20px rgba(0,212,255,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: 'Share Tech Mono', monospace; min-height: 100vh; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; background-image: radial-gradient(ellipse at 20% 20%, rgba(0,100,150,0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(0,50,100,0.1) 0%, transparent 50%); }
+  body::before { content: ''; position: fixed; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px); pointer-events: none; z-index: 100; }
+  header { width: 100%; max-width: 480px; padding: 20px 20px 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .logo { font-family: 'Orbitron', monospace; font-weight: 900; font-size: 1.4rem; color: var(--accent); text-shadow: var(--glow); letter-spacing: 2px; line-height: 1; }
+  .logo span { color: var(--accent2); }
+  .status-panel { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; color: var(--dim); letter-spacing: 1px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); transition: all 0.3s; flex-shrink: 0; }
+  .status-dot.connected { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .status-dot.connecting { background: var(--accent); animation: blink 0.8s infinite; }
+  .status-dot.error { background: var(--red); }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  #status-text { color: var(--text); transition: color 0.3s; }
+  #status-text.connected { color: var(--green); }
+  #status-text.error { color: var(--red); }
+  main { width: 100%; max-width: 480px; padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; flex: 1; }
+  #btn-connect { width: 100%; padding: 14px; background: linear-gradient(135deg, #003050, #001a30); border: 1px solid var(--accent); border-radius: 8px; color: var(--accent); font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; box-shadow: var(--glow), inset 0 1px 0 rgba(0,212,255,0.1); text-transform: uppercase; }
+  #btn-connect:hover { background: linear-gradient(135deg, #004070, #002040); }
+  #btn-connect:active { transform: scale(0.98); }
+  #btn-connect.connected { border-color: var(--red); color: var(--red); box-shadow: 0 0 20px rgba(255,51,102,0.3); background: linear-gradient(135deg, #300010, #1a000a); }
+  #btn-connect:disabled { opacity: 0.5; cursor: not-allowed; }
+  .speed-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  .speed-label { font-family: 'Orbitron', monospace; font-size: 0.65rem; color: var(--dim); letter-spacing: 2px; white-space: nowrap; min-width: 60px; }
+  input[type=range] { flex: 1; -webkit-appearance: none; height: 4px; background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--val, 70%), var(--btn-bg) var(--val, 70%)); border-radius: 2px; outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); box-shadow: 0 0 8px var(--accent); cursor: pointer; }
+  .speed-val { font-family: 'Orbitron', monospace; font-size: 0.9rem; color: var(--accent); min-width: 36px; text-align: right; }
+  .dpad-container { display: flex; justify-content: center; align-items: center; padding: 10px 0; }
+  .dpad { display: grid; grid-template-columns: repeat(3, 72px); grid-template-rows: repeat(3, 72px); gap: 6px; }
+  .dpad-btn { background: var(--btn-bg); border: 1px solid var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.1s; user-select: none; position: relative; overflow: hidden; }
+  .dpad-btn::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(0,212,255,0.15), transparent 70%); opacity: 0; transition: opacity 0.1s; }
+  .dpad-btn:active, .dpad-btn.pressed { background: var(--btn-active); border-color: var(--accent); box-shadow: var(--glow); transform: scale(0.95); }
+  .dpad-btn:active::before, .dpad-btn.pressed::before { opacity: 1; }
+  .dpad-btn svg { width: 28px; height: 28px; fill: var(--accent); transition: fill 0.1s; }
+  .dpad-btn:active svg, .dpad-btn.pressed svg { fill: white; }
+  .dpad-center { background: linear-gradient(135deg, #0a1a2a, #050d18) !important; border-color: #0d1f35 !important; cursor: default; display: flex; align-items: center; justify-content: center; }
+  .dpad-center-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--dim); transition: background 0.3s; }
+  .dpad-center-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .dpad-empty { visibility: hidden; }
+  #btn-stop { width: 100%; padding: 16px; background: linear-gradient(135deg, #1a0010, #0d0008); border: 1px solid var(--red); border-radius: 8px; color: var(--red); font-family: 'Orbitron', monospace; font-size: 0.9rem; font-weight: 700; letter-spacing: 4px; cursor: pointer; transition: all 0.15s; box-shadow: 0 0 15px rgba(255,51,102,0.2); text-transform: uppercase; }
+  #btn-stop:active { background: linear-gradient(135deg, #330018, #1a000c); box-shadow: 0 0 30px rgba(255,51,102,0.5); transform: scale(0.98); }
+  .log-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 0.7rem; color: var(--dim); letter-spacing: 1px; min-height: 36px; display: flex; align-items: center; gap: 8px; }
+  .log-prefix { color: var(--accent2); }
+  #log-msg { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .info-box { background: rgba(0,50,80,0.2); border: 1px solid rgba(0,100,150,0.3); border-radius: 8px; padding: 12px 14px; font-size: 0.68rem; color: var(--dim); line-height: 1.7; }
+  .info-box strong { color: var(--accent); font-family: 'Orbitron', monospace; font-size: 0.65rem; letter-spacing: 2px; }
+  .info-box code { color: var(--accent2); background: rgba(255,107,53,0.1); padding: 1px 4px; border-radius: 3px; }
+  footer { padding: 12px 20px; font-size: 0.6rem; color: var(--dim); letter-spacing: 1px; opacity: 0.5; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">CUTE<span>BOT</span><br><span style="font-size:0.55rem;color:var(--dim);letter-spacing:3px;font-weight:400">BLUETOOTH CTRL</span></div>
+  <div class="status-panel">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text">ODPOJENO</span>
+  </div>
+</header>
+<main>
+  <button id="btn-connect">⬡ Připojit micro:bit</button>
+  <div class="speed-panel">
+    <span class="speed-label">RYCHLOST</span>
+    <input type="range" id="speed" min="20" max="100" value="70" oninput="updateSpeed(this)">
+    <span class="speed-val" id="speed-val">70</span>
+  </div>
+  <div class="dpad-container">
+    <div class="dpad">
+      <div class="dpad-empty"></div>
+      <div class="dpad-btn" id="btn-fwd"
+           ontouchstart="pressBtn('F');event.preventDefault()"
+           ontouchend="releaseBtn();event.preventDefault()"
+           onmousedown="pressBtn('F')" onmouseup="releaseBtn()">
+        <svg viewBox="0 0 24 24"><path d="M12 3l9 18H3z"/></svg>
+      </div>
+      <div class="dpad-empty"></div>
+      <div class="dpad-btn" id="btn-left"
+           ontouchstart="pressBtn('L');event.preventDefault()"
+           ontouchend="releaseBtn();event.preventDefault()"
+           onmousedown="pressBtn('L')" onmouseup="releaseBtn()">
+        <svg viewBox="0 0 24 24"><path d="M3 12l18-9v18z"/></svg>
+      </div>
+      <div class="dpad-btn dpad-center">
+        <div class="dpad-center-dot" id="center-dot"></div>
+      </div>
+      <div class="dpad-btn" id="btn-right"
+           ontouchstart="pressBtn('R');event.preventDefault()"
+           ontouchend="releaseBtn();event.preventDefault()"
+           onmousedown="pressBtn('R')" onmouseup="releaseBtn()">
+        <svg viewBox="0 0 24 24"><path d="M21 12L3 3v18z"/></svg>
+      </div>
+      <div class="dpad-empty"></div>
+      <div class="dpad-btn" id="btn-bwd"
+           ontouchstart="pressBtn('B');event.preventDefault()"
+           ontouchend="releaseBtn();event.preventDefault()"
+           onmousedown="pressBtn('B')" onmouseup="releaseBtn()">
+        <svg viewBox="0 0 24 24"><path d="M12 21l-9-18h18z"/></svg>
+      </div>
+      <div class="dpad-empty"></div>
+    </div>
+  </div>
+  <button id="btn-stop"
+          ontouchstart="stopCar();event.preventDefault()"
+          onmousedown="stopCar()">■ STOP</button>
+  <div class="log-panel">
+    <span class="log-prefix">&gt;&gt;</span>
+    <span id="log-msg">Čekání na připojení...</span>
+  </div>
+  <div class="info-box">
+    <strong>NÁVOD</strong><br>
+    1. Nahraj kód <code>cutebot-microbit-v4.js</code> do micro:bitu<br>
+    2. V Project Settings zapni <code>No Pairing Required</code><br>
+    3. Odstraň micro:bit ze systémového Bluetooth v telefonu<br>
+    4. Klikni Připojit a vyber <code>BBC micro:bit</code>
+  </div>
+</main>
+<footer>CUTEBOT CTRL v1.3 · UUID 0003 · Web Bluetooth</footer>
+
+<script>
+// Správné UUID – zapisujeme na ...0003 (má WRITE + WRITE_NO_RSP)
+const UART_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const UART_RX      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // telefon → micro:bit
+
+let btDevice = null, uartRx = null;
+let isConnected = false;
+let currentSpeed = 70, currentCmd = null, sendInterval = null;
+
+function log(msg) { document.getElementById('log-msg').textContent = msg; }
+function setStatus(state, text) {
+  document.getElementById('status-dot').className = 'status-dot ' + state;
+  const t = document.getElementById('status-text');
+  t.className = state; t.textContent = text;
+}
+function updateSpeed(el) {
+  currentSpeed = parseInt(el.value);
+  document.getElementById('speed-val').textContent = currentSpeed;
+  el.style.setProperty('--val', ((currentSpeed - 20) / 80 * 100).toFixed(0) + '%');
+}
+document.getElementById('speed').style.setProperty('--val', '62.5%');
+
+async function connect() {
+  if (!navigator.bluetooth) { log('Web Bluetooth nepodporováno – použij Chrome!'); setStatus('error','CHYBA'); return; }
+  if (isConnected) { disconnect(); return; }
+  try {
+    setStatus('connecting', 'PŘIPOJUJI...');
+    log('Hledám micro:bit...');
+    document.getElementById('btn-connect').disabled = true;
+
+    btDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: 'BBC micro:bit' }],
+      optionalServices: [UART_SERVICE]
+    });
+    btDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+    const server  = await btDevice.gatt.connect();
+    const service = await server.getPrimaryService(UART_SERVICE);
+    uartRx = await service.getCharacteristic(UART_RX);
+
+    // Zapni notifikace – micro:bit pak může posílat zprávy zpět
+    try {
+      await uartRx.startNotifications();
+      uartRx.addEventListener('characteristicvaluechanged', e => {
+        const val = new TextDecoder().decode(e.target.value).trim();
+        if (val) log('← micro:bit: ' + val);
+      });
+    } catch(e) { /* notifikace nemusí fungovat, nevadí */ }
+
+    isConnected = true;
+    setStatus('connected', 'PŘIPOJENO');
+    log('✓ Připojeno k ' + btDevice.name);
+    document.getElementById('center-dot').classList.add('active');
+    const btn = document.getElementById('btn-connect');
+    btn.textContent = '⬡ Odpojit'; btn.classList.add('connected'); btn.disabled = false;
+
+  } catch(e) {
+    isConnected = false; uartRx = null;
+    setStatus('error', 'CHYBA');
+    log('Chyba: ' + e.message);
+    document.getElementById('btn-connect').disabled = false;
+  }
+}
+
+function disconnect() {
+  if (btDevice && btDevice.gatt.connected) btDevice.gatt.disconnect();
+  onDisconnected();
+}
+
+function onDisconnected() {
+  isConnected = false; uartRx = null; stopSending();
+  setStatus('', 'ODPOJENO'); log('Micro:bit odpojen.');
+  document.getElementById('center-dot').classList.remove('active');
+  const btn = document.getElementById('btn-connect');
+  btn.textContent = '⬡ Připojit micro:bit'; btn.classList.remove('connected'); btn.disabled = false;
+  document.querySelectorAll('.dpad-btn').forEach(b => b.classList.remove('pressed'));
+}
+
+async function sendCmd(cmd) {
+  if (!isConnected || !uartRx) return;
+  try {
+    const data = new TextEncoder().encode(cmd + '\n');
+    await uartRx.writeValueWithoutResponse(data);
+  } catch(e) {
+    try {
+      const data = new TextEncoder().encode(cmd + '\n');
+      await uartRx.writeValue(data);
+    } catch(e2) {
+      log('Chyba: ' + e2.message);
+    }
+  }
+}
+
+const btnMap   = { F:'btn-fwd', B:'btn-bwd', L:'btn-left', R:'btn-right' };
+const cmdNames = { F:'VPŘED', B:'VZAD', L:'VLEVO', R:'VPRAVO', S:'STOP' };
+
+function pressBtn(cmd) {
+  if (currentCmd === cmd) return;
+  currentCmd = cmd;
+  document.querySelectorAll('.dpad-btn').forEach(b => b.classList.remove('pressed'));
+  if (btnMap[cmd]) document.getElementById(btnMap[cmd]).classList.add('pressed');
+  sendCmd(cmd + currentSpeed);
+  log('→ ' + cmdNames[cmd] + ' (' + currentSpeed + ')');
+  stopSending();
+  sendInterval = setInterval(() => sendCmd(cmd + currentSpeed), 100);
+}
+
+function releaseBtn() {
+  if (!currentCmd) return;
+  currentCmd = null; stopSending();
+  document.querySelectorAll('.dpad-btn').forEach(b => b.classList.remove('pressed'));
+  sendCmd('S0'); log('⏹ Zastaveno');
+}
+
+function stopSending() { if (sendInterval) { clearInterval(sendInterval); sendInterval = null; } }
+
+function stopCar() {
+  currentCmd = null; stopSending();
+  document.querySelectorAll('.dpad-btn').forEach(b => b.classList.remove('pressed'));
+  sendCmd('S0'); log('■ STOP');
+}
+
+document.getElementById('btn-connect').addEventListener('click', connect);
+
+const keyMap = { ArrowUp:'F', w:'F', ArrowDown:'B', s:'B', ArrowLeft:'L', a:'L', ArrowRight:'R', d:'R' };
+document.addEventListener('keydown', e => { if (e.repeat) return; const c = keyMap[e.key]; if (c) pressBtn(c); if (e.key===' ') stopCar(); });
+document.addEventListener('keyup',   e => { const c = keyMap[e.key]; if (c) releaseBtn(); });
+document.addEventListener('contextmenu', e => e.preventDefault());
+</script>
+</body>
+</html>
